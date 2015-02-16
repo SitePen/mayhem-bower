@@ -58,44 +58,59 @@ define(["require", "exports", 'dojo/aspect', 'dojo/_base/lang', './html/peg/html
                     }
                 }
             }
-            function getInitialStateFromNode(node) {
-                var kwArgs = { app: app };
+            function readNode(node) {
+                if (util.isObject(node)) {
+                    if (typeof node.constructor === 'string') {
+                        return createWidget(node);
+                    }
+                    else if (node.$ctor) {
+                        return createViewConstructor(node.$ctor, self);
+                    }
+                    else {
+                        var kwArgs = node instanceof Array ? [] : {};
+                        for (var key in node) {
+                            kwArgs[key] = readNode(node[key]);
+                        }
+                        return kwArgs;
+                    }
+                }
+                else {
+                    return node;
+                }
+            }
+            function createWidget(node) {
+                var Ctor = require(node.constructor);
+                var initialState = getInitialState(node);
+                var isModelInheritor = !('model' in initialState.bindings) && Ctor.inheritsModel;
+                if (isModelInheritor) {
+                    initialState.kwArgs['model'] = model;
+                }
+                initialState.kwArgs['app'] = app;
+                var instance = new Ctor(initialState.kwArgs);
+                applyBindings(instance, initialState.bindings);
+                applyEvents(instance, initialState.events);
+                if (isModelInheritor) {
+                    modelInheritors.push(instance);
+                }
+                return instance;
+            }
+            function getInitialState(node) {
+                var kwArgs = {};
                 var bindings = {};
                 var events = {};
-                function recursivelyInitializeChildren(parent) {
-                    for (var key in parent) {
-                        var value = parent[key];
-                        if (value && typeof value.constructor === 'string') {
-                            parent[key] = initializeChild(value);
-                        }
-                        else if (util.isObject(value)) {
-                            recursivelyInitializeChildren(value);
-                        }
-                    }
-                    return parent;
-                }
                 for (var key in node) {
+                    var value = node[key];
                     if (key === 'constructor') {
                         continue;
                     }
-                    var value = node[key];
                     if (/^on[A-Z]/.test(key)) {
                         events[key.charAt(2).toLowerCase() + key.slice(3)] = value;
                     }
-                    else if (value && value.$bind) {
+                    else if (value.$bind) {
                         bindings[key] = value;
                     }
-                    else if (value && value.$ctor) {
-                        kwArgs[key] = createViewConstructor(value.$ctor, self);
-                    }
-                    else if (value && typeof value.constructor === 'string') {
-                        kwArgs[key] = initializeChild(value);
-                    }
                     else {
-                        if (util.isObject(value)) {
-                            recursivelyInitializeChildren(value);
-                        }
-                        kwArgs[key] = value;
+                        kwArgs[key] = readNode(value);
                     }
                 }
                 return {
@@ -103,21 +118,6 @@ define(["require", "exports", 'dojo/aspect', 'dojo/_base/lang', './html/peg/html
                     bindings: bindings,
                     events: events
                 };
-            }
-            function initializeChild(node) {
-                var WidgetCtor = require(node.constructor);
-                var initialState = getInitialStateFromNode(node);
-                var isModelInheritor = !('model' in initialState.bindings) && WidgetCtor.inheritsModel;
-                if (isModelInheritor) {
-                    initialState.kwArgs['model'] = model;
-                }
-                var childWidget = new WidgetCtor(initialState.kwArgs);
-                applyBindings(childWidget, initialState.bindings);
-                applyEvents(childWidget, initialState.events);
-                if (isModelInheritor) {
-                    modelInheritors.push(childWidget);
-                }
-                return childWidget;
             }
             aspect.before(this, 'destroy', function () {
                 var handle;
@@ -139,7 +139,7 @@ define(["require", "exports", 'dojo/aspect', 'dojo/_base/lang', './html/peg/html
                     model = value;
                 };
             }
-            var initialState = getInitialStateFromNode(root);
+            var initialState = getInitialState(root);
             applyBindings(this, initialState.bindings);
             applyEvents(this, initialState.events);
             BaseCtor.call(this, lang.mixin(initialState.kwArgs, kwArgs));
