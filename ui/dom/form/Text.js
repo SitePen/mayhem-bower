@@ -7,8 +7,12 @@ var __extends = this.__extends || function (d, b) {
 define(["require", "exports", '../DijitWidget', 'dijit/form/ValidationTextBox', 'dijit/form/SimpleTextarea', '../../form/KeyboardType', '../../../util'], function (require, exports, DijitWidget, DijitText, DijitTextarea, KeyboardType, util) {
     var Text = (function (_super) {
         __extends(Text, _super);
-        function Text() {
-            _super.apply(this, arguments);
+        function Text(kwArgs) {
+            util.deferSetters(this, ['isSecureEntry', 'keyboardType'], '_render');
+            util.deferSetters(this, ['isMultiLine'], '_render', function (_, value) {
+                this._isMultiLine = value;
+            });
+            _super.call(this, kwArgs);
         }
         Text.prototype._isMultiLineGetter = function () {
             return this._isMultiLine;
@@ -79,11 +83,7 @@ define(["require", "exports", '../DijitWidget', 'dijit/form/ValidationTextBox', 
         Text.prototype._render = function () {
             var isMultiLine = this.get('isMultiLine');
             var Ctor = isMultiLine ? DijitTextarea : DijitText;
-            var kwArgs = {};
-            if (!isMultiLine) {
-                kwArgs.type = this.get('isSecureEntry') ? 'password' : 'text';
-            }
-            var widget = new Ctor(kwArgs);
+            var widget = new Ctor();
             if (this._widget) {
                 this._node.parentNode.replaceChild(widget.domNode, this._node);
                 this._widget.destroyRecursive();

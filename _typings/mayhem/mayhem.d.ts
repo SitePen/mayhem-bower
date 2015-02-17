@@ -3419,6 +3419,7 @@ declare module 'mayhem/ui/dom/form/Text' {
 	     */
 	    _value: string;
 	    _widget: DijitText;
+	    constructor(kwArgs?: HashMap<any>);
 	    _initialize(): void;
 	    /**
 	     * @override
