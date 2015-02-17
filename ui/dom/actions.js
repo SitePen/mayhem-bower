@@ -18,11 +18,11 @@ define(["require", "exports", 'dojo/aspect', '../../Event', '../../util'], funct
             mouse: 5,
             touch: 40
         };
-        var buttons = {};
-        function resetButton(buttonId) {
-            buttons[buttonId] = null;
-        }
         return function (target, callback) {
+            var buttons = {};
+            function resetButton(buttonId) {
+                buttons[buttonId] = null;
+            }
             return util.createCompositeHandle(target.on('pointerdown', function (event) {
                 if (!event.isPrimary || event.defaultPrevented) {
                     return;
