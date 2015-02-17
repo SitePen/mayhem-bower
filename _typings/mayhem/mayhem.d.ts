@@ -3319,7 +3319,19 @@ declare module 'mayhem/ui/dom/form/RadioButton' {
 	export = RadioButton;
 
 }
+declare module 'mayhem/ui/form/KeyboardType' {
+	 enum KeyboardType {
+	    DEFAULT = 0,
+	    URL = 1,
+	    NUMBER = 2,
+	    TELEPHONE = 3,
+	    EMAIL = 4,
+	}
+	export = KeyboardType;
+
+}
 declare module 'mayhem/ui/form/Text' {
+	import KeyboardType = require('mayhem/ui/form/KeyboardType');
 	import Widget = require('mayhem/ui/Widget');
 	interface Text extends Widget {
 	    get: Text.Getters;
@@ -3331,12 +3343,16 @@ declare module 'mayhem/ui/form/Text' {
 	    interface Getters extends Widget.Getters {
 	        (key: 'autoCommit'): boolean;
 	        (key: 'isMultiLine'): boolean;
+	        (key: 'isSecureEntry'): boolean;
+	        (key: 'keyboardType'): KeyboardType;
 	        (key: 'placeholder'): string;
 	        (key: 'value'): string;
 	    }
 	    interface Setters extends Widget.Setters {
 	        (key: 'autoCommit', value: boolean): void;
 	        (key: 'isMultiLine', value: boolean): void;
+	        (key: 'isSecureEntry', value: boolean): void;
+	        (key: 'keyboardType', value: KeyboardType): void;
 	        (key: 'placeholder', value: string): void;
 	        (key: 'value', value: string): void;
 	    }
@@ -3349,7 +3365,9 @@ declare module 'mayhem/ui/form/Text' {
 }
 declare module 'mayhem/ui/dom/form/Text' {
 	import DijitWidget = require('mayhem/ui/dom/DijitWidget');
-	import IText = require('mayhem/ui/form/Text'); class Text extends DijitWidget implements IText {
+	import DijitText = require('dijit/form/ValidationTextBox');
+	import IText = require('mayhem/ui/form/Text');
+	import KeyboardType = require('mayhem/ui/form/KeyboardType'); class Text extends DijitWidget implements IText {
 	    static setupMap: {
 	        events?: HashMap<(event?: Event) => void>;
 	        properties?: HashMap<string>;
@@ -3371,6 +3389,22 @@ declare module 'mayhem/ui/dom/form/Text' {
 	     * @set
 	     * @protected
 	     */
+	    _isSecureEntry: boolean;
+	    _isSecureEntryGetter(): boolean;
+	    _isSecureEntrySetter(value: boolean): void;
+	    /**
+	    * @get
+	    * @set
+	    * @protected
+	    */
+	    _keyboardType: KeyboardType;
+	    _keyboardTypeGetter(): KeyboardType;
+	    _keyboardTypeSetter(value: KeyboardType): void;
+	    /**
+	     * @get
+	     * @set
+	     * @protected
+	     */
 	    _placeholder: string;
 	    /**
 	     * @get
@@ -3384,6 +3418,7 @@ declare module 'mayhem/ui/dom/form/Text' {
 	     * @protected
 	     */
 	    _value: string;
+	    _widget: DijitText;
 	    _initialize(): void;
 	    /**
 	     * @override

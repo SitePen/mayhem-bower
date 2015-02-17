@@ -55,12 +55,14 @@ define(["require", "exports", '../AddPosition', '../common/Container', 'dijit/Di
         };
         Dialog.prototype.add = function (child, position) {
             if (position === void 0) { position = -1 /* LAST */; }
+            var children = this._children;
             if (position === -1 /* LAST */) {
-                position = this._children.length;
+                position = children.length;
             }
-            var nextWidget = this._children[position];
+            var nextWidget = children[position];
             var nextNode = nextWidget ? nextWidget.get('firstNode') : null;
             this._containerNode.insertBefore(child.detach(), nextNode);
+            children.splice(position, 0, child);
             ContainerMixin.prototype.add.call(this, child);
             var self = this;
             return util.createHandle(function () {

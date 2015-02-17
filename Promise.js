@@ -6,7 +6,23 @@ define(["require", "exports", 'dojo/Deferred', 'dojo/promise/Promise', 'dojo/_ba
                 return canceler && canceler(reason);
             });
             try {
-                initializer(lang.hitch(dfd, 'resolve'), lang.hitch(dfd, 'reject'), lang.hitch(dfd, 'progress'), function (_canceler) {
+                initializer(function (value) {
+                    if (value && value.then) {
+                        var promise = value;
+                        promise.then(lang.hitch(dfd, 'resolve'), lang.hitch(dfd, 'reject'), lang.hitch(dfd, 'progress'));
+                        if (promise.cancel) {
+                            canceler = (function (oldCanceler) {
+                                return function (reason) {
+                                    promise.cancel(reason);
+                                    oldCanceler && oldCanceler(reason);
+                                };
+                            })(canceler);
+                        }
+                    }
+                    else {
+                        dfd.resolve(value);
+                    }
+                }, lang.hitch(dfd, 'reject'), lang.hitch(dfd, 'progress'), function (_canceler) {
                     canceler = _canceler;
                 });
             }
