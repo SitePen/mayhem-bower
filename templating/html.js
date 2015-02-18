@@ -16,9 +16,20 @@ define(["require", "exports", 'dojo/aspect', 'dojo/_base/lang', './html/peg/html
             function applyBindings(widget, bindings) {
                 for (var key in bindings) {
                     var declaration = bindings[key];
+                    var sourcePath = declaration.$bind;
+                    if (sourcePath instanceof Array) {
+                        sourcePath = sourcePath.map(function (part) {
+                            if (typeof part === 'string') {
+                                return part;
+                            }
+                            else {
+                                return { path: part.$bind };
+                            }
+                        });
+                    }
                     handles.push(binder.bind({
                         source: model || emptyObject,
-                        sourcePath: declaration.$bind,
+                        sourcePath: sourcePath,
                         target: widget,
                         targetPath: key,
                         direction: declaration.direction
@@ -140,8 +151,6 @@ define(["require", "exports", 'dojo/aspect', 'dojo/_base/lang', './html/peg/html
                 };
             }
             var initialState = getInitialState(root);
-            applyBindings(this, initialState.bindings);
-            applyEvents(this, initialState.events);
             BaseCtor.call(this, lang.mixin(initialState.kwArgs, kwArgs));
             this.observe('model', function (value) {
                 for (var i = 0, handle; (handle = handles[i]); ++i) {
@@ -151,6 +160,8 @@ define(["require", "exports", 'dojo/aspect', 'dojo/_base/lang', './html/peg/html
                     child.set('model', value);
                 }
             });
+            applyBindings(this, initialState.bindings);
+            applyEvents(this, initialState.events);
         }
         __extends(TemplatedView, BaseCtor);
         return TemplatedView;
