@@ -192,10 +192,13 @@ define(["require", "exports", '../../has', '../../util'], function (require, exp
         return node['widget'];
     }
     exports.findNearestParent = findNearestParent;
-    function findWidgetAtPoint(widget, x, y) {
+    function findWidgetAtPoint(widget, x, y, domTarget) {
         var widgetNode = widget.get('firstNode');
         var node;
-        if (widgetNode.nodeType === Node.COMMENT_NODE) {
+        if (!domTarget.contains(widgetNode)) {
+            node = domTarget.firstChild;
+        }
+        else if (widgetNode.nodeType === Node.COMMENT_NODE) {
             node = widgetNode.nextSibling;
         }
         else {
@@ -221,11 +224,12 @@ define(["require", "exports", '../../has', '../../util'], function (require, exp
         return widget;
     }
     function findWidgetAt(master, x, y) {
-        var parent = findNearestParent(master, document.elementFromPoint(x, y));
+        var domTarget = document.elementFromPoint(x, y);
+        var parent = findNearestParent(master, domTarget);
         if (!parent) {
             return null;
         }
-        return findWidgetAtPoint(parent, x, y);
+        return findWidgetAtPoint(parent, x, y, domTarget);
     }
     exports.findWidgetAt = findWidgetAt;
 });

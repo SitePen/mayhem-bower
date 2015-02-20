@@ -73,6 +73,8 @@ class Master extends MultiNodeWidget implements IMaster {
 
 					self.set('view', view);
 				});
+			}).otherwise(function (error:Error) {
+				self._app.handleError(error);
 			});
 		}
 		else {

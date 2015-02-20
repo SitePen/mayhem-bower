@@ -54,6 +54,8 @@ define(["require", "exports", './events/EventManager', './MultiNodeWidget', '../
                         }
                         self.set('view', view);
                     });
+                }).otherwise(function (error) {
+                    self._app.handleError(error);
                 });
             }
             else {
