@@ -119,7 +119,12 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
             var shouldCancel = false;
             var hasMoved = changes.clientX || changes.clientY;
             if (hasMoved) {
-                previousTarget = domUtil.findWidgetAt(this._master, pointer.lastState.clientX, pointer.lastState.clientY) || this._master;
+                if (pointer.lastState.clientX == null || pointer.lastState.clientY == null) {
+                    previousTarget = null;
+                }
+                else {
+                    previousTarget = domUtil.findWidgetAt(this._master, pointer.lastState.clientX, pointer.lastState.clientY) || this._master;
+                }
             }
             if (hasMoved && target !== previousTarget) {
                 if (this._emitPointerEvent('pointerout', pointer, previousTarget, target)) {
