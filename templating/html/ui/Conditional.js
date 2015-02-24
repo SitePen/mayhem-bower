@@ -74,6 +74,7 @@ define(["require", "exports", '../../../ui/dom/MultiNodeWidget', '../../../util'
             return this._isAttached;
         };
         Conditional.prototype._isAttachedSetter = function (value) {
+            this._isAttached = value;
             if (value) {
                 this._bindConditions();
             }
@@ -82,7 +83,6 @@ define(["require", "exports", '../../../ui/dom/MultiNodeWidget', '../../../util'
                 this._modelObserver && this._modelObserver.remove();
                 this._conditionObserveHandle = this._modelObserver = null;
             }
-            this._isAttached = value;
         };
         Conditional.inheritsModel = true;
         return Conditional;
