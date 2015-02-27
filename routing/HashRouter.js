@@ -19,7 +19,7 @@ define(["require", "exports", 'dojo/hash', 'dojo/io-query', 'dojo/_base/lang', '
             this._handle = null;
         };
         HashRouter.prototype.go = function (routeId, kwArgs) {
-            var newHash = this.createUrl(routeId, kwArgs);
+            var newHash = this.createUrl(routeId, kwArgs).slice(1);
             if (this._oldHash === newHash) {
                 return;
             }
