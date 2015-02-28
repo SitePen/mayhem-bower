@@ -1858,8 +1858,12 @@ declare module 'mayhem/ui/interfaces' {
 declare module 'mayhem/ui/dom/actions' {
 	import ui = require('mayhem/ui/interfaces');
 	import Widget = require('mayhem/ui/dom/Widget');
-	export function activate(target: Widget, callback: (event?: ui.UiEvent) => void): IHandle;
-	export var click: (target: Widget, callback: Function) => IHandle;
+	export interface ExtensionEvent {
+	    (target: Widget, callback: (event?: ui.UiEvent) => void): IHandle;
+	    symbol: string;
+	}
+	export var activate: ExtensionEvent;
+	export var click: ExtensionEvent;
 
 }
 declare module 'mayhem/ui/AddPosition' {

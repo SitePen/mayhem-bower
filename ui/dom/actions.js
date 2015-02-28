@@ -1,30 +1,92 @@
-define(["require", "exports", 'dojo/aspect', '../../Event', '../../util'], function (require, exports, aspect, Event, util) {
-    function activate(target, callback) {
-        return util.createCompositeHandle(exports.click(target, function (event) {
-            if (event.numClicks === 1 && event.buttons === 1) {
-                callback.call(this, event);
+define(["require", "exports", '../../Event', '../../util', '../../WeakMap'], function (require, exports, Event, util, WeakMap) {
+    function createExtensionEvent(symbol, register) {
+        var registeredUis = new WeakMap();
+        var extensionEvent = function (target, callback) {
+            var ui = target.get('app').get('ui');
+            var registration = registeredUis.get(ui);
+            if (!registration) {
+                registration = {
+                    handle: register(ui),
+                    numActivations: 0
+                };
+                registeredUis.set(ui, registration);
             }
-        }), target.on('keyup', function (event) {
-            if (event.key === 'Enter' || event.key === ' ') {
-                callback.call(this, event);
+            else if (registration.unregisterTimer) {
+                registration.unregisterTimer.remove();
+                registration.unregisterTimer = null;
             }
-        }));
+            ++registration.numActivations;
+            var handle = target.on(symbol, callback);
+            return util.createHandle(function () {
+                if (--registration.numActivations === 0) {
+                    registration.unregisterTimer = util.createTimer(function () {
+                        registration.handle.remove();
+                        registeredUis.delete(ui);
+                        registration = null;
+                    });
+                }
+                handle.remove();
+                handle = null;
+            });
+        };
+        extensionEvent.symbol = symbol;
+        return extensionEvent;
     }
-    exports.activate = activate;
+    exports.activate = (function () {
+        var ACTIVATE_SYMBOL = 'mayhemActivate';
+        function convertEvent(originalEvent) {
+            return new Event({
+                bubbles: true,
+                cancelable: true,
+                target: originalEvent.target,
+                type: ACTIVATE_SYMBOL,
+                view: originalEvent.view
+            });
+        }
+        function register(ui) {
+            return util.createCompositeHandle(exports.click(ui, function (event) {
+                if (event.numClicks === 1 && event.buttons === 1) {
+                    var newEvent = convertEvent(event);
+                    try {
+                        event.target.emit(newEvent);
+                    }
+                    finally {
+                        if (newEvent.defaultPrevented) {
+                            event.preventDefault();
+                        }
+                    }
+                }
+            }), ui.on('keyup', function (event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    var newEvent = convertEvent(event);
+                    try {
+                        event.target.emit(newEvent);
+                    }
+                    finally {
+                        if (newEvent.defaultPrevented) {
+                            event.preventDefault();
+                        }
+                    }
+                }
+            }));
+        }
+        return createExtensionEvent(ACTIVATE_SYMBOL, register);
+    })();
     exports.click = (function () {
+        var CLICK_SYMBOL = 'mayhemClick';
         var CLICK_SPEED = 300;
         var MAX_DISTANCE = {
             pen: 15,
             mouse: 5,
             touch: 40
         };
-        return function (target, callback) {
+        function register(ui) {
             var buttons = {};
             function resetButton(buttonId) {
                 buttons[buttonId] = null;
             }
-            return util.createCompositeHandle(target.on('pointerdown', function (event) {
-                if (!event.isPrimary || event.defaultPrevented) {
+            return util.createCompositeHandle(ui.on('pointerdown', function (event) {
+                if (!event.isPrimary) {
                     return;
                 }
                 var buttonState = buttons[event.button];
@@ -35,9 +97,7 @@ define(["require", "exports", 'dojo/aspect', '../../Event', '../../util'], funct
                         }, CLICK_SPEED)
                     };
                 }
-                aspect.after(event, 'preventDefault', function () {
-                    buttonState.defaultPrevented = true;
-                });
+                var target = event.target;
                 if (buttonState.lastTarget !== target) {
                     buttonState.numClicks = 0;
                     buttonState.lastTarget = target;
@@ -48,34 +108,34 @@ define(["require", "exports", 'dojo/aspect', '../../Event', '../../util'], funct
                     buttonState.lastY = event.clientY;
                 }
                 buttonState.resetAfterDelay();
-            }), target.on('pointerup', function (event) {
-                if (!event.isPrimary || event.defaultPrevented) {
+            }), ui.on('pointerup', function (event) {
+                if (!event.isPrimary) {
                     return;
                 }
                 var buttonState = buttons[event.button];
                 if (!buttonState) {
                     return;
                 }
-                if (buttonState.defaultPrevented) {
-                    buttonState.defaultPrevented = false;
-                    return;
-                }
-                if (event.timestamp - buttonState.lastTimestamp < CLICK_SPEED && event.clientX - buttonState.lastX < MAX_DISTANCE[event.pointerType] && event.clientY - buttonState.lastY < MAX_DISTANCE[event.pointerType]) {
+                if (event.timestamp - buttonState.lastTimestamp < CLICK_SPEED && Math.abs(event.clientX - buttonState.lastX) < MAX_DISTANCE[event.pointerType] && Math.abs(event.clientY - buttonState.lastY) < MAX_DISTANCE[event.pointerType]) {
                     ++buttonState.numClicks;
                     var newEvent = new Event(event);
-                    newEvent.type = 'click';
+                    newEvent.type = CLICK_SYMBOL;
                     newEvent.numClicks = buttonState.numClicks;
                     newEvent.buttons = event.buttons | event.button;
                     try {
-                        callback.call(this, newEvent);
+                        event.target.emit(newEvent);
                     }
                     finally {
+                        if (newEvent.defaultPrevented) {
+                            event.preventDefault();
+                        }
                         buttonState.resetAfterDelay();
                     }
                 }
                 buttonState.lastTimestamp = null;
             }));
-        };
+        }
+        return createExtensionEvent(CLICK_SYMBOL, register);
     })();
 });
 //# sourceMappingURL=../../_debug/ui/dom/actions.js.map
