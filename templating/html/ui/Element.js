@@ -44,11 +44,24 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
         function ElementWidget() {
             _super.apply(this, arguments);
         }
+        ElementWidget.prototype._applyEventListeners = function () {
+            var queues = this._eventQueues;
+            for (var eventName in queues) {
+                this.on(eventName, function (event) {
+                    var listeners = queues[eventName];
+                    var i = listeners.length - 1;
+                    while (i >= 0) {
+                        listeners[i](event);
+                        --i;
+                    }
+                });
+            }
+        };
         ElementWidget.prototype._initialize = function () {
             _super.prototype._initialize.call(this);
             this._bindingHandles = [];
+            this._eventQueues = {};
             this._placeholders = {};
-            var self = this;
             this.observe('model', function (value) {
                 value = value || {};
                 var handle;
@@ -75,6 +88,7 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                 placeholder = this._placeholders[key];
                 placeholder && placeholder.destroy();
             }
+            this._eventQueues = null;
             this._placeholders = null;
             _super.prototype.destroy.call(this);
         };
@@ -164,7 +178,10 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                                 var eventName = result[1].toLowerCase().replace(/-(.)/g, function (_, character) {
                                     return character.toUpperCase();
                                 });
-                                self.on(eventName, lang.partial(function (node, method, event) {
+                                if (!self._eventQueues[eventName]) {
+                                    self._eventQueues[eventName] = [];
+                                }
+                                self._eventQueues[eventName].push(lang.partial(function (node, method, event) {
                                     var element;
                                     if ('key' in event) {
                                         element = document.activeElement;
@@ -175,7 +192,7 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                                     else {
                                         return;
                                     }
-                                    if (element === node) {
+                                    if (element === node || (node.contains(element) && event.bubbles && !event.propagationStopped)) {
                                         if (binding) {
                                             return binding.get().call(binding.getObject(), event);
                                         }
@@ -257,6 +274,7 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                 processNode(node);
                 node = nextNode;
             }
+            this._applyEventListeners();
             _super.prototype._render.call(this);
             this._fragment.insertBefore(content, this._lastNode);
         };

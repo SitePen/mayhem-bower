@@ -2419,9 +2419,14 @@ declare module 'mayhem/templating/html/ui/Element' {
 	     */
 	    private _content;
 	    /**
+	     * A map of event names to arrays of event listeners, used to force events to fire on the innermost targets first.
+	     */
+	    private _eventQueues;
+	    /**
 	     * A map of widgets currently assigned to the different placeholder properties within the ElementWidget.
 	     */
 	    private _placeholders;
+	    private _applyEventListeners();
 	    _initialize(): void;
 	    /**
 	     * @override

@@ -35,13 +35,18 @@ define(["require", "exports", '../../Event', '../../util', '../../WeakMap'], fun
     exports.activate = (function () {
         var ACTIVATE_SYMBOL = 'mayhemActivate';
         function convertEvent(originalEvent) {
-            return new Event({
+            var kwArgs = {
                 bubbles: true,
                 cancelable: true,
                 target: originalEvent.target,
                 type: ACTIVATE_SYMBOL,
                 view: originalEvent.view
-            });
+            };
+            if ('clientX' in originalEvent) {
+                kwArgs.clientX = originalEvent.clientX;
+                kwArgs.clientY = originalEvent.clientY;
+            }
+            return new Event(kwArgs);
         }
         function register(ui) {
             return util.createCompositeHandle(exports.click(ui, function (event) {
