@@ -61,7 +61,7 @@ define(["require", "exports", 'dojo/aspect', 'dojo/_base/lang', './html/peg/html
                     var eventTarget = events[eventName];
                     if (typeof eventTarget === 'string') {
                         widget.on(eventName, function (event) {
-                            self[eventTarget] && self[eventTarget].call(this, event);
+                            self[eventTarget] && self[eventTarget](event);
                         });
                     }
                     else {
