@@ -36,7 +36,7 @@ define(["require", "exports", '../../../ui/dom/MultiNodeWidget', '../../../Promi
             function setModel(view, as, value) {
                 var kwArgs = {
                     app: self._app,
-                    model: self.get('model')
+                    target: self.get('model')
                 };
                 kwArgs[as] = value;
                 var proxy = new Proxy(kwArgs);
@@ -104,6 +104,7 @@ define(["require", "exports", '../../../ui/dom/MultiNodeWidget', '../../../Promi
             this._fulfilled = this._pending = this._rejected = null;
             _super.prototype.destroy.call(this);
         };
+        PromiseWidget.inheritsModel = true;
         return PromiseWidget;
     })(MultiNodeWidget);
     PromiseWidget.prototype._pendingSetter = createSetter('_pending');

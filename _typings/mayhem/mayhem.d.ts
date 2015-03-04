@@ -2504,6 +2504,7 @@ declare module 'mayhem/templating/html/ui/Promise' {
 	import MultiNodeWidget = require('mayhem/ui/dom/MultiNodeWidget');
 	import Promise = require('mayhem/Promise');
 	import View = require('mayhem/ui/View'); class PromiseWidget<T> extends MultiNodeWidget {
+	    static inheritsModel: boolean;
 	    private _as;
 	    private _fulfilled;
 	    private _pending;
