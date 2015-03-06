@@ -40,11 +40,7 @@ define(["require", "exports", '../../../ui/dom/MultiNodeWidget', '../../../Promi
                 };
                 kwArgs[as] = value;
                 var proxy = new Proxy(kwArgs);
-                var oldModel = view.get('model');
                 view.set('model', proxy);
-                if (oldModel && oldModel.destroy) {
-                    oldModel.destroy();
-                }
             }
             function attach(view) {
                 self._lastNode.parentNode.insertBefore(view.detach(), self._lastNode);

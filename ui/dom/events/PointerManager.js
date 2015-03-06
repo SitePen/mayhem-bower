@@ -247,7 +247,11 @@ define(["require", "exports", '../util', '../../../has', 'dojo/_base/lang', '../
                             pointer.buttons = event.buttons;
                         }
                         else {
-                            pointer.buttons = isButtonPressed ? Math.pow(2, event.button) : 0;
+                            var buttonMap = {
+                                1: 2,
+                                2: 1
+                            };
+                            pointer.buttons = isButtonPressed ? Math.pow(2, buttonMap[event.button] || event.button) : 0;
                         }
                         pointer.clientX = event.clientX;
                         pointer.clientY = event.clientY;

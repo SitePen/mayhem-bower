@@ -47,14 +47,14 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
         ElementWidget.prototype._applyEventListeners = function () {
             var queues = this._eventQueues;
             for (var eventName in queues) {
-                this.on(eventName, function (event) {
+                this.on(eventName, lang.partial(function (eventName, event) {
                     var listeners = queues[eventName];
                     var i = listeners.length - 1;
                     while (i >= 0) {
                         listeners[i](event);
                         --i;
                     }
-                });
+                }, eventName));
             }
         };
         ElementWidget.prototype._initialize = function () {
