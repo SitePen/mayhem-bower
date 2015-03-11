@@ -34,6 +34,9 @@ define(["require", "exports", '../../../ui/dom/MultiNodeWidget', '../../../Promi
             this._value = Promise.resolve(value);
             var self = this;
             function setModel(view, as, value) {
+                if (!view.constructor.inheritsModel) {
+                    return;
+                }
                 var kwArgs = {
                     app: self._app,
                     target: self.get('model')

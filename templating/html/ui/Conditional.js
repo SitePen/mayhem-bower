@@ -65,10 +65,22 @@ define(["require", "exports", '../../../ui/dom/MultiNodeWidget', '../../../util'
                         isAttached: this.get('isAttached'),
                         parent: this
                     });
+                    if (view.constructor.inheritsModel) {
+                        view.set('model', this.get('model'));
+                    }
                     break;
                 }
             }
             this._conditionObserveHandle = util.createCompositeHandle.apply(undefined, handles);
+        };
+        Conditional.prototype._conditionsGetter = function () {
+            return this._conditions;
+        };
+        Conditional.prototype._conditionsSetter = function (value) {
+            this._conditions = value;
+            if (this.get('isAttached')) {
+                this._bindConditions();
+            }
         };
         Conditional.prototype._isAttachedGetter = function () {
             return this._isAttached;

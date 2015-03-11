@@ -2244,6 +2244,9 @@ declare module 'mayhem/templating/html/peg/html' {
 }
 declare module 'mayhem/templating/html' {
 	import Widget = require('mayhem/ui/dom/Widget');
+	export interface TemplatingAwareWidgetConstructor {
+	    inheritsModel?: boolean;
+	}
 	/**
 	 * Creates a Widget constructor from an HTML template.
 	 *
@@ -2303,6 +2306,8 @@ declare module 'mayhem/templating/html/ui/Conditional' {
 	    private _bindConditions();
 	    destroy(): void;
 	    private _evaluateConditions();
+	    _conditionsGetter(): Conditional.ICondition[];
+	    _conditionsSetter(value: Conditional.ICondition[]): void;
 	    /**
 	     * @protected
 	     */
