@@ -2519,6 +2519,7 @@ declare module 'mayhem/templating/html/ui/Promise' {
 	import View = require('mayhem/ui/View'); class PromiseWidget<T> extends MultiNodeWidget {
 	    static inheritsModel: boolean;
 	    private _as;
+	    private _attachedView;
 	    private _fulfilled;
 	    private _pending;
 	    private _pendingAs;
@@ -2530,6 +2531,8 @@ declare module 'mayhem/templating/html/ui/Promise' {
 	    set: PromiseWidget.Setters<T>;
 	    constructor(kwArgs?: HashMap<any>);
 	    _initialize(): void;
+	    _isAttachedGetter(): boolean;
+	    _isAttachedSetter(value: boolean): void;
 	    _valueGetter(): Promise<T>;
 	    _valueSetter(value: T): void;
 	    _valueSetter(value: Promise<T>): void;
