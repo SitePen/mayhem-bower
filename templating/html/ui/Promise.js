@@ -33,18 +33,6 @@ define(["require", "exports", '../../../ui/dom/MultiNodeWidget', '../../../Promi
         PromiseWidget.prototype._valueSetter = function (value) {
             this._value = Promise.resolve(value);
             var self = this;
-            function setModel(view, as, value) {
-                if (!view.constructor.inheritsModel) {
-                    return;
-                }
-                var kwArgs = {
-                    app: self._app,
-                    target: self.get('model')
-                };
-                kwArgs[as] = value;
-                var proxy = new Proxy(kwArgs);
-                view.set('model', proxy);
-            }
             function attach(view) {
                 self._lastNode.parentNode.insertBefore(view.detach(), self._lastNode);
                 view.set({
@@ -65,25 +53,20 @@ define(["require", "exports", '../../../ui/dom/MultiNodeWidget', '../../../Promi
                 if (self._pending) {
                     self._pending.detach();
                 }
-                if (value instanceof Error) {
-                    throw value;
-                }
-                else {
-                    return value;
-                }
-            }).then(function (value) {
+            });
+            this._value.then(function (value) {
                 if (self._fulfilled) {
-                    setModel(self._fulfilled, self._as, value);
+                    self._model.set(self._as, value);
                     attach(self._fulfilled);
                 }
             }, function (error) {
                 if (self._rejected) {
-                    setModel(self._rejected, self._rejectedAs, error);
+                    self._model.set(self._rejectedAs, error);
                     attach(self._rejected);
                 }
-            }, this._value.isFulfilled() ? null : function (progress) {
+            }, function (progress) {
                 if (self._pending) {
-                    setModel(self._pending, self._pendingAs, progress);
+                    self._model.set(self._pendingAs, progress);
                 }
             });
         };
@@ -96,11 +79,27 @@ define(["require", "exports", '../../../ui/dom/MultiNodeWidget', '../../../Promi
         PromiseWidget.prototype._fulfilledGetter = function () {
             return this._fulfilled;
         };
+        PromiseWidget.prototype._modelGetter = function () {
+            return this._model && this._model.get('target');
+        };
+        PromiseWidget.prototype._modelSetter = function (value) {
+            if (this._model) {
+                this._model.set('target', value);
+            }
+            else {
+                var kwArgs = {
+                    app: this._app,
+                    target: value
+                };
+                this._model = new Proxy(kwArgs);
+            }
+        };
         PromiseWidget.prototype.destroy = function () {
             this._fulfilled && this._fulfilled.destroy();
             this._pending && this._pending.destroy();
             this._rejected && this._rejected.destroy();
-            this._fulfilled = this._pending = this._rejected = null;
+            this._model && this._model.destroy();
+            this._fulfilled = this._pending = this._rejected = this._model = null;
             _super.prototype.destroy.call(this);
         };
         PromiseWidget.inheritsModel = true;

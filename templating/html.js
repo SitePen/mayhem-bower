@@ -91,18 +91,17 @@ define(["require", "exports", 'dojo/aspect', 'dojo/_base/lang', './html/peg/html
             }
             function createWidget(node) {
                 var Ctor = require(node.constructor);
-                var initialState = getInitialState(node);
-                var isModelInheritor = !('model' in initialState.bindings) && Ctor.inheritsModel;
-                if (isModelInheritor) {
-                    initialState.kwArgs['model'] = model;
+                if (Ctor.inheritsModel) {
+                    Ctor = createViewConstructor(node, self);
+                    instance = new Ctor({ app: app, model: model });
+                    modelInheritors.push(instance);
+                    return instance;
                 }
+                var initialState = getInitialState(node);
                 initialState.kwArgs['app'] = app;
                 var instance = new Ctor(initialState.kwArgs);
                 applyBindings(instance, initialState.bindings);
                 applyEvents(instance, initialState.events);
-                if (isModelInheritor) {
-                    modelInheritors.push(instance);
-                }
                 return instance;
             }
             function getInitialState(node) {

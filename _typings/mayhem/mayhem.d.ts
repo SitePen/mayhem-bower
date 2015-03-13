@@ -1736,7 +1736,10 @@ declare module 'mayhem/data/Proxy' {
 	import core = require('mayhem/interfaces');
 	import data = require('mayhem/data/interfaces');
 	import Observable = require('mayhem/Observable'); class Proxy<T> extends Observable {
-	    static forCollection(collection: dstore.ICollection<data.IModel>): dstore.ICollection<Proxy<data.IModel>>;
+	    static forCollection<T extends data.IModel>(collection: dstore.ISyncCollection<T>): dstore.ISyncCollection<Proxy<T>>;
+	    static forCollection<T extends data.IModel>(collection: dstore.ICollection<T>): dstore.ICollection<Proxy<T>>;
+	    static forCollection<T extends Proxy<data.IModel>>(collection: dstore.ISyncCollection<T>): dstore.ISyncCollection<Proxy<T>>;
+	    static forCollection<T extends Proxy<data.IModel>>(collection: dstore.ICollection<T>): dstore.ICollection<Proxy<T>>;
 	    /**
 	     * @protected
 	     */
@@ -1758,8 +1761,10 @@ declare module 'mayhem/data/Proxy' {
 	    _targetSetter(target: T): void;
 	} module Proxy {
 	    interface Getters extends Observable.Getters {
+	        (key: 'target'): Observable;
 	    }
 	    interface Setters extends Observable.Setters {
+	        (key: 'target', value: Observable): void;
 	    }
 	}
 	export = Proxy;
@@ -2246,6 +2251,8 @@ declare module 'mayhem/templating/html' {
 	import Widget = require('mayhem/ui/dom/Widget');
 	export interface TemplatingAwareWidgetConstructor {
 	    inheritsModel?: boolean;
+	    new (kwArgs?: {}): Widget;
+	    prototype: Widget;
 	}
 	/**
 	 * Creates a Widget constructor from an HTML template.
@@ -2508,6 +2515,7 @@ declare module 'mayhem/templating/html/ui/Iterator' {
 declare module 'mayhem/templating/html/ui/Promise' {
 	import MultiNodeWidget = require('mayhem/ui/dom/MultiNodeWidget');
 	import Promise = require('mayhem/Promise');
+	import Proxy = require('mayhem/data/Proxy');
 	import View = require('mayhem/ui/View'); class PromiseWidget<T> extends MultiNodeWidget {
 	    static inheritsModel: boolean;
 	    private _as;
@@ -2531,6 +2539,9 @@ declare module 'mayhem/templating/html/ui/Promise' {
 	    _rejectedSetter: (value: View) => void;
 	    _fulfilledGetter(): View;
 	    _fulfilledSetter: (value: View) => void;
+	    _model: Proxy<{}>;
+	    _modelGetter(): {};
+	    _modelSetter(value: {}): void;
 	    destroy(): void;
 	} module PromiseWidget {
 	    interface Events extends MultiNodeWidget.Events {

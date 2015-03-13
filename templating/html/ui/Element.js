@@ -122,18 +122,24 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                         htmlContent += '<!--bind ' + (bindings.length - 1) + '-->';
                     }
                 }
+                var domContent;
                 if (has('dom-firstchild-empty-bug')) {
                     htmlContent = '&shy;' + htmlContent;
-                    var domContent = domConstruct.toDom(htmlContent);
+                    domContent = domConstruct.toDom(htmlContent);
                     var shyNode = domContent.childNodes[0];
                     if (shyNode.nodeType === 3 && shyNode.nodeValue.charAt(0) === '\u00AD') {
                         shyNode.nodeValue = shyNode.nodeValue.slice(1);
                     }
-                    return domContent;
                 }
                 else {
-                    return domConstruct.toDom(htmlContent);
+                    domContent = domConstruct.toDom(htmlContent);
+                    if (domContent.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) {
+                        var fragment = document.createDocumentFragment();
+                        fragment.appendChild(domContent);
+                        domContent = fragment;
+                    }
                 }
+                return domContent;
             }
             function processNode(node) {
                 var result;

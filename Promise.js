@@ -37,15 +37,15 @@ define(["require", "exports", 'dojo/Deferred', 'dojo/promise/Promise', 'dojo/_ba
             return dfd.promise;
         };
         Promise.resolve = function (value) {
-            if (value instanceof DojoPromise) {
+            if (value instanceof DojoPromise || value instanceof Promise) {
                 return value;
             }
             if (value instanceof Deferred) {
                 return value.promise;
             }
-            var dfd = new Deferred();
-            dfd.resolve(value);
-            return dfd.promise;
+            return new Promise(function (resolve) {
+                resolve(value);
+            });
         };
         Promise.all = whenAll;
         Promise.Deferred = Deferred;

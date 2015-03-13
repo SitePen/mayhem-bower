@@ -4,7 +4,7 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-define(["require", "exports", 'dojo/_base/declare', '../has', 'dojo/_base/lang', 'dstore/Memory', '../Observable', 'dstore/Trackable', '../util'], function (require, exports, declare, has, lang, MemoryStore, Observable, TrackableStore, util) {
+define(["require", "exports", '../has', '../Observable', '../util', '../WeakMap'], function (require, exports, has, Observable, util, WeakMap) {
     var Proxy = (function (_super) {
         __extends(Proxy, _super);
         function Proxy(kwArgs) {
@@ -17,63 +17,65 @@ define(["require", "exports", 'dojo/_base/declare', '../has', 'dojo/_base/lang',
             this._initializing = false;
         }
         Proxy.forCollection = function (collection) {
-            var Store = declare([MemoryStore, TrackableStore], {
-                Model: null
-            });
-            var wrapperCollection = new Store();
             var Ctor = this;
-            collection = collection.track();
-            collection.fetch().then(function (initialData) {
-                var wrappedData = new Array(initialData.length);
-                for (var i = 0; i < initialData.length; ++i) {
-                    wrappedData[i] = new Ctor({ target: initialData[i] });
+            var proxies = new WeakMap();
+            var models = new WeakMap();
+            function createProxy(item) {
+                var proxy = proxies.get(item);
+                if (!proxy) {
+                    proxy = new Ctor({ app: item.get('app'), target: item });
+                    proxies.set(item, proxy);
+                    models.set(proxy, item);
                 }
-                wrapperCollection.setData(wrappedData);
-            });
-            wrapperCollection.fetch();
-            function wrapSetter(method) {
-                return function (object, options) {
-                    if (object.setTarget) {
-                        object = object.get('target');
-                    }
-                    return collection[method](object, options);
-                };
+                return proxy;
             }
-            var put = wrapperCollection.putSync;
-            var remove = wrapperCollection.removeSync;
-            wrapperCollection.add = wrapSetter('add');
-            wrapperCollection.addSync = wrapSetter('addSync');
-            wrapperCollection.put = wrapSetter('put');
-            wrapperCollection.putSync = wrapSetter('putSync');
-            wrapperCollection.remove = lang.hitch(collection, 'remove');
-            wrapperCollection.removeSync = lang.hitch(collection, 'removeSync');
-            collection.on('add', function (event) {
-                if (event.index !== undefined) {
-                    put.call(wrapperCollection, new Ctor({
-                        app: event.target.get('app'),
-                        target: event.target
-                    }), { index: event.index });
+            function wrapCollection(collection) {
+                var wrapperCollection = Object.create(collection);
+                ['add', 'addSync', 'put', 'putSync', 'remove', 'removeSync'].forEach(function (method) {
+                    if (collection[method]) {
+                        wrapperCollection[method] = function (object) {
+                            object = models.get(object) || object;
+                            return collection[method].apply(collection, arguments);
+                        };
+                    }
+                });
+                wrapperCollection.get = function () {
+                    return collection.get.apply(collection, arguments).then(createProxy);
+                };
+                if (collection.getSync) {
+                    wrapperCollection.getSync = function () {
+                        return createProxy(collection.getSync.apply(collection, arguments));
+                    };
                 }
-            });
-            collection.on('update', function (event) {
-                var id = collection.getIdentity(event.target);
-                if (event.index === undefined) {
-                    remove.call(wrapperCollection, id);
+                wrapperCollection.fetch = function () {
+                    return collection.fetch.apply(collection, arguments).then(function (items) {
+                        return items.map(createProxy);
+                    });
+                };
+                if (collection.fetchSync) {
+                    wrapperCollection.fetchSync = function () {
+                        return collection.fetchSync.apply(collection, arguments);
+                    };
                 }
-                else if (event.previousIndex === undefined) {
-                    put.call(wrapperCollection, new Ctor({
-                        app: event.target.get('app'),
-                        target: event.target
-                    }), { index: event.index });
-                }
-                else {
-                    put.call(wrapperCollection, wrapperCollection.getSync(id), { index: event.index });
-                }
-            });
-            collection.on('delete', function (event) {
-                remove.call(wrapperCollection, event.id);
-            });
-            return wrapperCollection;
+                wrapperCollection._createSubCollection = function (kwArgs) {
+                    var newCollection = collection._createSubCollection(kwArgs);
+                    return wrapCollection(newCollection);
+                };
+                wrapperCollection.emit = function (eventName, event) {
+                    var newEvent = Object.create(event);
+                    newEvent.target = models.get(event.target) || event.target;
+                    return collection.emit(eventName, newEvent);
+                };
+                wrapperCollection.on = function (eventName, listener) {
+                    return collection.on(eventName, function (event) {
+                        var newEvent = Object.create(event);
+                        newEvent.target = createProxy(event.target);
+                        return listener.call(wrapperCollection, newEvent);
+                    });
+                };
+                return wrapperCollection;
+            }
+            return wrapCollection(collection);
         };
         Proxy.prototype._initialize = function () {
             this._targetHandles = has('es5') ? Object.create(null) : {};

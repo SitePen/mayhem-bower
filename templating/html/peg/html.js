@@ -80,7 +80,9 @@ return (function() {
 
         			if (typeof item === 'string') {
         				parsed = parseBoundText(item);
-        				if (parsed.$bind) {
+        				// if an element contains only a single binding string and nothing else it will be provided as a
+        				// scalar value, not an array
+        				if (parsed.$bind && parsed.$bind instanceof Array) {
         					Array.prototype.push.apply(results, parsed.$bind);
         				}
         				else {
