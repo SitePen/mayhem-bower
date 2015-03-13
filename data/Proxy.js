@@ -47,14 +47,36 @@ define(["require", "exports", '../has', '../Observable', '../util', '../WeakMap'
                         return createProxy(collection.getSync.apply(collection, arguments));
                     };
                 }
-                wrapperCollection.fetch = function () {
-                    return collection.fetch.apply(collection, arguments).then(function (items) {
-                        return items.map(createProxy);
-                    });
-                };
-                if (collection.fetchSync) {
-                    wrapperCollection.fetchSync = function () {
-                        return collection.fetchSync.apply(collection, arguments);
+                ['fetch', 'fetchRange'].forEach(function (method) {
+                    wrapperCollection[method] = function () {
+                        var promise = collection[method].apply(collection, arguments);
+                        var proxiedPromise = promise.then(function (items) {
+                            return items.map(createProxy);
+                        });
+                        if (Object.isFrozen(proxiedPromise)) {
+                            proxiedPromise = Object.create(proxiedPromise);
+                        }
+                        if ('totalLength' in promise) {
+                            proxiedPromise.totalLength = promise.totalLength;
+                        }
+                        return proxiedPromise;
+                    };
+                });
+                ['fetchSync', 'fetchRangeSync'].forEach(function (method) {
+                    if (collection[method]) {
+                        wrapperCollection[method] = function () {
+                            var data = collection[method].apply(collection, arguments);
+                            var proxiedData = data.map(createProxy);
+                            if ('totalLength' in data) {
+                                proxiedData.totalLength = data.totalLength;
+                            }
+                            return proxiedData;
+                        };
+                    }
+                });
+                if (collection.track) {
+                    wrapperCollection.track = function () {
+                        return wrapCollection(collection.track.apply(collection, arguments));
                     };
                 }
                 wrapperCollection._createSubCollection = function (kwArgs) {

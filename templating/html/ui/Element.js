@@ -4,7 +4,7 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom/Container', 'dojo/dom-construct', '../../../has', 'dojo/_base/lang', '../binding/ProxyBinding'], function (require, exports, BindDirection, Container, domConstruct, has, lang, ProxyBinding) {
+define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom/Container', 'dojo/dom-construct', '../../../has', '../binding/ProxyBinding'], function (require, exports, BindDirection, Container, domConstruct, has, ProxyBinding) {
     var Node;
     if (has('dom-addeventlistener')) {
         Node = window.Node;
@@ -44,19 +44,6 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
         function ElementWidget() {
             _super.apply(this, arguments);
         }
-        ElementWidget.prototype._applyEventListeners = function () {
-            var queues = this._eventQueues;
-            for (var eventName in queues) {
-                this.on(eventName, lang.partial(function (eventName, event) {
-                    var listeners = queues[eventName];
-                    var i = listeners.length - 1;
-                    while (i >= 0) {
-                        listeners[i](event);
-                        --i;
-                    }
-                }, eventName));
-            }
-        };
         ElementWidget.prototype._initialize = function () {
             _super.prototype._initialize.call(this);
             this._bindingHandles = [];
@@ -104,6 +91,106 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
             var binder = this._app.get('binder');
             var model = this.get('model') || {};
             var bindings = [];
+            function addEvent(node, eventName, listener) {
+                function getElement(event) {
+                    if ('key' in event) {
+                        return document.activeElement;
+                    }
+                    else if ('clientX' in event) {
+                        return document.elementFromPoint(event.clientX, event.clientY);
+                    }
+                }
+                function runListeners(target, event) {
+                    var newEvent;
+                    newEvent = Object.create(event);
+                    newEvent.preventDefault = function () {
+                        event.preventDefault();
+                    };
+                    newEvent.stopPropagation = function () {
+                        event.stopPropagation();
+                    };
+                    newEvent.targetNode = target;
+                    newEvent.bubbles = (eventName !== 'pointerenter' && eventName !== 'pointerleave');
+                    newEvent.type = eventName;
+                    var currentListeners = listeners.slice(0);
+                    for (var i = 0, entry; (entry = currentListeners[i]); ++i) {
+                        if (target === entry.node || (newEvent.bubbles && !newEvent.propagationStopped && entry.node.contains(target))) {
+                            newEvent.currentTargetNode = entry.node;
+                            entry.listener.call(self, newEvent);
+                        }
+                    }
+                }
+                var listeners = self._eventQueues[eventName];
+                if (!listeners) {
+                    listeners = self._eventQueues[eventName] = [];
+                    if (eventName === 'pointerout' || eventName === 'pointerleave' || eventName === 'pointerover' || eventName === 'pointerenter') {
+                        var lastElement;
+                        if (eventName === 'pointerleave') {
+                            self.on('pointermove', function (event) {
+                                var newElement = getElement(event);
+                                if (lastElement && !lastElement.contains(newElement)) {
+                                    runListeners(lastElement, event);
+                                }
+                                lastElement = newElement;
+                            });
+                        }
+                        else if (eventName === 'pointerout') {
+                            self.on('pointermove', function (event) {
+                                var newElement = getElement(event);
+                                if (lastElement && !lastElement.contains(newElement)) {
+                                    runListeners(lastElement, event);
+                                }
+                                lastElement = newElement;
+                            });
+                        }
+                        else if (eventName === 'pointerenter') {
+                            self.on('pointermove', function (event) {
+                                var newElement = getElement(event);
+                                if (newElement && !newElement.contains(lastElement)) {
+                                    runListeners(newElement, event);
+                                }
+                                lastElement = newElement;
+                            });
+                        }
+                        else if (eventName === 'pointerover') {
+                            self.on('pointermove', function (event) {
+                                var newElement = getElement(event);
+                                if (newElement && !newElement.contains(lastElement)) {
+                                    runListeners(newElement, event);
+                                }
+                                lastElement = newElement;
+                            });
+                        }
+                        if (eventName === 'pointerout' || eventName === 'pointerleave') {
+                            self.on('pointerleave', function (event) {
+                                if (lastElement) {
+                                    runListeners(lastElement, event);
+                                    lastElement = null;
+                                }
+                            });
+                        }
+                        else {
+                            self.on('pointerenter', function (event) {
+                                var newElement = getElement(event);
+                                if (newElement) {
+                                    runListeners(newElement, event);
+                                    lastElement = newElement;
+                                }
+                            });
+                        }
+                    }
+                    else {
+                        self.on(eventName, function (event) {
+                            var target = getElement(event);
+                            if (!target) {
+                                return;
+                            }
+                            runListeners(target, event);
+                        });
+                    }
+                }
+                listeners.unshift({ node: node, listener: listener });
+            }
             function generateContent(source) {
                 var htmlContent = '';
                 for (var i = 0, j = source.length, part; i < j; ++i) {
@@ -166,7 +253,7 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                     for (var i = 0, attribute; (attribute = node.attributes[i]); ++i) {
                         var nodeValue = attribute.value;
                         if ((result = EVENT_ATTRIBUTE.exec(attribute.name))) {
-                            (function () {
+                            (function (nodeValue) {
                                 var boundEvent = BIND_ATTRIBUTE.exec(nodeValue);
                                 BIND_ATTRIBUTE.lastIndex = 0;
                                 var binding;
@@ -184,30 +271,15 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                                 var eventName = result[1].toLowerCase().replace(/-(.)/g, function (_, character) {
                                     return character.toUpperCase();
                                 });
-                                if (!self._eventQueues[eventName]) {
-                                    self._eventQueues[eventName] = [];
-                                }
-                                self._eventQueues[eventName].push(lang.partial(function (node, method, event) {
-                                    var element;
-                                    if ('key' in event) {
-                                        element = document.activeElement;
-                                    }
-                                    else if ('clientX' in event) {
-                                        element = document.elementFromPoint(event.clientX, event.clientY);
+                                addEvent(node, eventName, function (event) {
+                                    if (binding) {
+                                        return binding.get().call(binding.getObject(), event);
                                     }
                                     else {
-                                        return;
+                                        return self[nodeValue](event);
                                     }
-                                    if (element === node || (node.contains(element) && event.bubbles && !event.propagationStopped)) {
-                                        if (binding) {
-                                            return binding.get().call(binding.getObject(), event);
-                                        }
-                                        else {
-                                            return self[method](event);
-                                        }
-                                    }
-                                }, node, nodeValue));
-                            })();
+                                });
+                            })(nodeValue);
                         }
                         else if ((result = BIND_ATTRIBUTE.exec(nodeValue))) {
                             var lastIndex = 0;
@@ -280,7 +352,6 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                 processNode(node);
                 node = nextNode;
             }
-            this._applyEventListeners();
             _super.prototype._render.call(this);
             this._fragment.insertBefore(content, this._lastNode);
         };

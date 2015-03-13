@@ -2414,6 +2414,7 @@ declare module 'mayhem/ui/dom/Container' {
 }
 declare module 'mayhem/templating/html/ui/Element' {
 	import Container = require('mayhem/ui/dom/Container');
+	import ui = require('mayhem/ui/interfaces');
 	import Widget = require('mayhem/ui/dom/Widget'); class ElementWidget extends Container {
 	    static inheritsModel: boolean;
 	    get: ElementWidget.Getters;
@@ -2438,7 +2439,6 @@ declare module 'mayhem/templating/html/ui/Element' {
 	     * A map of widgets currently assigned to the different placeholder properties within the ElementWidget.
 	     */
 	    private _placeholders;
-	    private _applyEventListeners();
 	    _initialize(): void;
 	    /**
 	     * @override
@@ -2456,6 +2456,10 @@ declare module 'mayhem/templating/html/ui/Element' {
 	    }
 	    interface Setters extends Container.Setters {
 	        (key: 'model', value: Object): void;
+	    }
+	    interface ElementPointerEvent extends ui.PointerEvent {
+	        currentTargetNode: Element;
+	        targetNode: Element;
 	    }
 	}
 	export = ElementWidget;
