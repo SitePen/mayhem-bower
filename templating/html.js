@@ -1,5 +1,5 @@
 define(["require", "exports", 'dojo/aspect', 'dojo/_base/lang', './html/peg/html', '../util'], function (require, exports, aspect, lang, parser, util) {
-    function createViewConstructor(root, parent) {
+    function createViewConstructor(root, parent, eventRoot) {
         var BaseCtor = require(root.constructor);
         function TemplatedView(kwArgs) {
             if (kwArgs === void 0) { kwArgs = {}; }
@@ -61,7 +61,7 @@ define(["require", "exports", 'dojo/aspect', 'dojo/_base/lang', './html/peg/html
                     var eventTarget = events[eventName];
                     if (typeof eventTarget === 'string') {
                         widget.on(eventName, function (event) {
-                            self[eventTarget] && self[eventTarget](event);
+                            (eventRoot || self)[eventTarget] && (eventRoot || self)[eventTarget](event);
                         });
                     }
                     else {
@@ -92,7 +92,7 @@ define(["require", "exports", 'dojo/aspect', 'dojo/_base/lang', './html/peg/html
             function createWidget(node) {
                 var Ctor = require(node.constructor);
                 if (Ctor.inheritsModel) {
-                    Ctor = createViewConstructor(node, self);
+                    Ctor = createViewConstructor(node, self, parent || self);
                     instance = new Ctor({ app: app, model: model });
                     modelInheritors.push(instance);
                     return instance;
@@ -135,7 +135,6 @@ define(["require", "exports", 'dojo/aspect', 'dojo/_base/lang', './html/peg/html
                     handle.remove();
                 }
             });
-            var model;
             if (!('_modelGetter' in this)) {
                 this._modelGetter = function () {
                     return model;
