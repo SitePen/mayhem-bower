@@ -120,8 +120,8 @@ define(["require", "exports", '../common/Container', 'dstore/legacy/DstoreAdapte
             if (this._isAttached === value) {
                 return;
             }
-            this._widget.set('isAttached', value);
             this._isAttached = value;
+            this._widget.set('isAttached', value);
         };
         ListView.prototype.remove = function (child) {
             child.detach();
