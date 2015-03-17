@@ -47,6 +47,12 @@ define(["require", "exports", '../has', '../Observable', '../util', '../WeakMap'
                         return createProxy(collection.getSync.apply(collection, arguments));
                     };
                 }
+                wrapperCollection.sort = function () {
+                    return wrapCollection(collection.sort.apply(collection, arguments));
+                };
+                wrapperCollection.filter = function () {
+                    return wrapCollection(collection.filter.apply(collection, arguments));
+                };
                 ['fetch', 'fetchRange'].forEach(function (method) {
                     wrapperCollection[method] = function () {
                         var promise = collection[method].apply(collection, arguments);

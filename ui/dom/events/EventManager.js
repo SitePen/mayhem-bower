@@ -113,6 +113,15 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
             return shouldCancel;
         };
         EventManager.prototype._handlePointerChange = function (pointer) {
+            function contains(maybeParent, child) {
+                var parent = child;
+                do {
+                    if (parent === maybeParent) {
+                        return true;
+                    }
+                } while ((parent = parent.get('parent')));
+                return false;
+            }
             var target = domUtil.findWidgetAt(this._master, pointer.clientX, pointer.clientY) || this._master;
             var previousTarget;
             var changes = pointer.lastChanged;
@@ -126,7 +135,7 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
                     previousTarget = domUtil.findWidgetAt(this._master, pointer.lastState.clientX, pointer.lastState.clientY) || this._master;
                 }
             }
-            if (hasMoved && target !== previousTarget && previousTarget) {
+            if (hasMoved && !contains(previousTarget, target)) {
                 if (this._emitPointerEvent('pointerout', pointer, previousTarget, target)) {
                     shouldCancel = true;
                 }
@@ -135,7 +144,7 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
             if (this._emitPointerEvent('pointermove', pointer, target)) {
                 shouldCancel = true;
             }
-            if (hasMoved && target !== previousTarget) {
+            if (hasMoved && !contains(target, previousTarget)) {
                 if (this._emitPointerEvent('pointerover', pointer, target, previousTarget)) {
                     shouldCancel = true;
                 }

@@ -168,6 +168,14 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                                     lastElement = null;
                                 }
                             });
+                            if (eventName === 'pointerout') {
+                                self.on('pointerout', function (event) {
+                                    var oldNode = event.target && event.target.get('firstNode');
+                                    if (oldNode && oldNode.nodeType === Node.COMMENT_NODE) {
+                                        runListeners(oldNode, event);
+                                    }
+                                });
+                            }
                         }
                         else {
                             self.on('pointerenter', function (event) {
@@ -177,6 +185,14 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                                     lastElement = newElement;
                                 }
                             });
+                            if (eventName === 'pointerover') {
+                                self.on('pointerover', function (event) {
+                                    var newNode = event.target && event.target.get('firstNode');
+                                    if (newNode && newNode.nodeType === Node.COMMENT_NODE) {
+                                        runListeners(newNode, event);
+                                    }
+                                });
+                            }
                         }
                     }
                     else {
