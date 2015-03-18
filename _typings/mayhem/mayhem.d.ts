@@ -1093,6 +1093,8 @@ declare module 'mayhem/WeakMap' {
 }
 declare module 'mayhem/auth/User' {
 	import Observable = require('mayhem/Observable'); class User extends Observable {
+	    get: User.Getters;
+	    set: User.Setters;
 	    /**
 	     * Whether or not the current user is authenticated. @protected
 	     */
@@ -1135,6 +1137,15 @@ declare module 'mayhem/auth/User' {
 	     * boolean true or false.
 	     */
 	    checkAccess(operation: string, kwArgs?: Object): any;
+	} module User {
+	    interface Getters extends Observable.Getters {
+	        (key: 'isAuthenticated'): boolean;
+	        (key: 'state'): Object;
+	    }
+	    interface Setters extends Observable.Setters {
+	        (key: 'isAuthenticated', value: boolean): void;
+	        (key: 'state', value: Object): void;
+	    }
 	}
 	export = User;
 

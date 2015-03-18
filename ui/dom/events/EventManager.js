@@ -114,6 +114,9 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
         };
         EventManager.prototype._handlePointerChange = function (pointer) {
             function contains(maybeParent, child) {
+                if (!maybeParent || !child) {
+                    return false;
+                }
                 var parent = child;
                 do {
                     if (parent === maybeParent) {
