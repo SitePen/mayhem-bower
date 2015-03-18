@@ -138,7 +138,7 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
                     previousTarget = domUtil.findWidgetAt(this._master, pointer.lastState.clientX, pointer.lastState.clientY) || this._master;
                 }
             }
-            if (hasMoved && !contains(previousTarget, target)) {
+            if (hasMoved && !contains(previousTarget, target) && previousTarget) {
                 if (this._emitPointerEvent('pointerout', pointer, previousTarget, target)) {
                     shouldCancel = true;
                 }
