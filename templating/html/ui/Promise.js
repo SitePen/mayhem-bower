@@ -48,6 +48,7 @@ define(["require", "exports", '../../../ui/dom/MultiNodeWidget', '../../../Promi
                 self._attachedView = view;
                 view.set({
                     isAttached: self.get('isAttached'),
+                    model: self._model,
                     parent: self
                 });
             }
@@ -97,9 +98,9 @@ define(["require", "exports", '../../../ui/dom/MultiNodeWidget', '../../../Promi
                     app: this._app,
                     target: value
                 };
-                kwArgs[this._as] = null;
-                kwArgs[this._rejectedAs] = null;
-                kwArgs[this._pendingAs] = null;
+                kwArgs[this._as] = undefined;
+                kwArgs[this._rejectedAs] = undefined;
+                kwArgs[this._pendingAs] = undefined;
                 this._model = new Proxy(kwArgs);
             }
         };
