@@ -92,7 +92,7 @@ define(["require", "exports", 'dojo/aspect', 'dojo/_base/lang', './html/peg/html
             function createWidget(node) {
                 var Ctor = require(node.constructor);
                 if (Ctor.inheritsModel) {
-                    Ctor = createViewConstructor(node, self, parent || self);
+                    Ctor = createViewConstructor(node, self, eventRoot || parent || self);
                     instance = new Ctor({ app: app, model: model });
                     modelInheritors.push(instance);
                     return instance;
