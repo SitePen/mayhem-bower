@@ -137,7 +137,7 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                         else if (eventName === 'pointerout') {
                             self.on('pointermove', function (event) {
                                 var newElement = getElement(event);
-                                if (lastElement && !lastElement.contains(newElement)) {
+                                if (lastElement && !lastElement.contains(newElement) && !lastElement['widget']) {
                                     runListeners(lastElement, event);
                                 }
                                 lastElement = newElement;
@@ -155,7 +155,7 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                         else if (eventName === 'pointerover') {
                             self.on('pointermove', function (event) {
                                 var newElement = getElement(event);
-                                if (newElement && !newElement.contains(lastElement)) {
+                                if (newElement && !newElement.contains(lastElement) && !newElement['widget']) {
                                     runListeners(newElement, event);
                                 }
                                 lastElement = newElement;
@@ -171,7 +171,7 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                             if (eventName === 'pointerout') {
                                 self.on('pointerout', function (event) {
                                     var oldNode = event.target && event.target.get('firstNode');
-                                    if (oldNode && oldNode.nodeType === Node.COMMENT_NODE) {
+                                    if (oldNode) {
                                         runListeners(oldNode, event);
                                     }
                                 });
@@ -188,7 +188,7 @@ define(["require", "exports", '../../../binding/BindDirection', '../../../ui/dom
                             if (eventName === 'pointerover') {
                                 self.on('pointerover', function (event) {
                                     var newNode = event.target && event.target.get('firstNode');
-                                    if (newNode && newNode.nodeType === Node.COMMENT_NODE) {
+                                    if (newNode) {
                                         runListeners(newNode, event);
                                     }
                                 });

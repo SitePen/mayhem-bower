@@ -97,6 +97,9 @@ define(["require", "exports", '../../../ui/dom/MultiNodeWidget', '../../../Promi
                     app: this._app,
                     target: value
                 };
+                kwArgs[this._as] = null;
+                kwArgs[this._rejectedAs] = null;
+                kwArgs[this._pendingAs] = null;
                 this._model = new Proxy(kwArgs);
             }
         };

@@ -176,6 +176,7 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
             if (this._emitPointerEvent('pointerout', pointer, target)) {
                 shouldCancel = true;
             }
+            this._emitPointerEvent('pointerleave', pointer, target);
             return shouldCancel;
         };
         return EventManager;
