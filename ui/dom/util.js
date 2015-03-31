@@ -187,7 +187,13 @@ define(["require", "exports", '../../has', '../../util'], function (require, exp
             node = node.parentNode;
         }
         if (node === root) {
-            return master.get('view');
+            var masterView = master.get('view');
+            if (masterView.get('firstNode').nodeType === Node.COMMENT_NODE) {
+                return masterView;
+            }
+            else {
+                return null;
+            }
         }
         return node['widget'];
     }
