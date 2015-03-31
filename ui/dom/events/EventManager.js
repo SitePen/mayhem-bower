@@ -14,6 +14,18 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
         pointerover: true,
         pointerup: true
     };
+    function contains(maybeParent, child) {
+        if (!maybeParent || !child) {
+            return false;
+        }
+        var parent = child;
+        do {
+            if (parent === maybeParent) {
+                return true;
+            }
+        } while ((parent = parent.get('parent')));
+        return false;
+    }
     var EventManager = (function () {
         function EventManager(master) {
             this._master = master;
@@ -29,12 +41,14 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
                 this._keyboardManager.on('repeat', lang.hitch(this, '_emitKeyboardEvent', 'keyrepeat')),
                 this._keyboardManager.on('up', lang.hitch(this, '_emitKeyboardEvent', 'keyup'))
             ];
+            this._targets = {};
         }
         EventManager.prototype.destroy = function () {
             this.destroy = function () {
             };
             this._pointerManager.destroy();
             this._keyboardManager.destroy();
+            this._targets = null;
         };
         EventManager.prototype._emitKeyboardEvent = function (type, keyInfo) {
             var target = domUtil.findNearestParent(this._master, document.activeElement);
@@ -59,9 +73,6 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
             return !event.currentTarget.emit(event);
         };
         EventManager.prototype._emitPointerEvent = function (type, pointer, target, relatedTarget) {
-            if (!target) {
-                target = domUtil.findWidgetAt(this._master, pointer.clientX, pointer.clientY);
-            }
             var event = new Event({
                 bubbles: BUBBLES[type],
                 button: pointer.lastState.buttons ^ pointer.buttons,
@@ -86,45 +97,42 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
             });
             return !event.currentTarget.emit(event);
         };
-        EventManager.prototype._handlePointerAdd = function (pointer) {
-            var target = domUtil.findWidgetAt(this._master, pointer.clientX, pointer.clientY);
-            if (!target) {
-                target = this._master;
+        EventManager.prototype._emitEnter = function (pointer, target, relatedTarget) {
+            var targets = [];
+            do {
+                targets.unshift(target);
+            } while ((target = target.get('parent')) && relatedTarget !== target);
+            while ((target = targets.pop())) {
+                this._emitPointerEvent('pointerenter', pointer, target, relatedTarget);
             }
+        };
+        EventManager.prototype._emitLeave = function (pointer, target, relatedTarget) {
+            do {
+                this._emitPointerEvent('pointerleave', pointer, target, relatedTarget);
+            } while ((target = target.get('parent')) && !contains(target, relatedTarget));
+        };
+        EventManager.prototype._handlePointerAdd = function (pointer) {
+            var target = domUtil.findWidgetAt(this._master, pointer.clientX, pointer.clientY) || this._master;
             var shouldCancel = this._emitPointerEvent('pointerover', pointer, target);
-            this._emitPointerEvent('pointerenter', pointer, target);
+            this._emitEnter(pointer, target);
             if (pointer.pointerType === 'touch') {
                 if (this._emitPointerEvent('pointerdown', pointer, target)) {
                     shouldCancel = true;
                 }
             }
+            this._targets[pointer.pointerId] = target;
             return shouldCancel;
         };
         EventManager.prototype._handlePointerCancel = function (pointer) {
-            var target = domUtil.findWidgetAt(this._master, pointer.lastState.clientX, pointer.lastState.clientY);
-            if (!target) {
-                target = this._master;
-            }
+            var target = this._targets[pointer.pointerId] || this._master;
             var shouldCancel = this._emitPointerEvent('pointercancel', pointer, target);
             if (this._emitPointerEvent('pointerout', pointer, target)) {
                 shouldCancel = true;
             }
-            this._emitPointerEvent('pointerleave', pointer, target);
+            this._emitLeave(pointer, target);
             return shouldCancel;
         };
         EventManager.prototype._handlePointerChange = function (pointer) {
-            function contains(maybeParent, child) {
-                if (!maybeParent || !child) {
-                    return false;
-                }
-                var parent = child;
-                do {
-                    if (parent === maybeParent) {
-                        return true;
-                    }
-                } while ((parent = parent.get('parent')));
-                return false;
-            }
             var target = domUtil.findWidgetAt(this._master, pointer.clientX, pointer.clientY) || this._master;
             var previousTarget;
             var changes = pointer.lastChanged;
@@ -135,14 +143,14 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
                     previousTarget = null;
                 }
                 else {
-                    previousTarget = domUtil.findWidgetAt(this._master, pointer.lastState.clientX, pointer.lastState.clientY) || this._master;
+                    previousTarget = this._targets[pointer.pointerId] || this._master;
                 }
             }
-            if (hasMoved && !contains(previousTarget, target) && previousTarget) {
+            if (hasMoved && previousTarget && !contains(previousTarget, target)) {
                 if (this._emitPointerEvent('pointerout', pointer, previousTarget, target)) {
                     shouldCancel = true;
                 }
-                this._emitPointerEvent('pointerleave', pointer, previousTarget, target);
+                this._emitLeave(pointer, previousTarget, target);
             }
             if (this._emitPointerEvent('pointermove', pointer, target)) {
                 shouldCancel = true;
@@ -151,7 +159,7 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
                 if (this._emitPointerEvent('pointerover', pointer, target, previousTarget)) {
                     shouldCancel = true;
                 }
-                this._emitPointerEvent('pointerenter', pointer, target, previousTarget);
+                this._emitEnter(pointer, target, previousTarget);
             }
             if (changes.buttons) {
                 if (pointer.buttons > 0 && pointer.lastState.buttons === 0) {
@@ -165,10 +173,11 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
                     }
                 }
             }
+            this._targets[pointer.pointerId] = target;
             return shouldCancel;
         };
         EventManager.prototype._handlePointerRemove = function (pointer) {
-            var target = domUtil.findWidgetAt(this._master, pointer.lastState.clientX, pointer.lastState.clientY) || this._master;
+            var target = this._targets[pointer.pointerId] || this._master;
             var shouldCancel = false;
             if (pointer.pointerType === 'touch') {
                 shouldCancel = this._emitPointerEvent('pointerup', pointer.lastState, target);
@@ -176,7 +185,8 @@ define(["require", "exports", '../util', '../../../Event', 'dojo/_base/lang', '.
             if (this._emitPointerEvent('pointerout', pointer, target)) {
                 shouldCancel = true;
             }
-            this._emitPointerEvent('pointerleave', pointer, target);
+            this._emitLeave(pointer, target);
+            this._targets[pointer.pointerId] = undefined;
             return shouldCancel;
         };
         return EventManager;

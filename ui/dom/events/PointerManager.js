@@ -223,9 +223,6 @@ define(["require", "exports", '../util', '../../../has', 'dojo/_base/lang', '../
                             event.preventDefault();
                             return;
                         }
-                        if (event.type === 'mouseenter' && event.target !== root) {
-                            return;
-                        }
                         if (!has('dom-mouse-buttons')) {
                             if (event.type === 'mousedown') {
                                 isButtonPressed = true;
@@ -237,6 +234,9 @@ define(["require", "exports", '../util', '../../../has', 'dojo/_base/lang', '../
                         var pointer = pointers[NaN];
                         if (!pointer) {
                             pointer = pointers[NaN] = { lastChanged: [], lastState: {} };
+                        }
+                        if (event.type === 'mouseenter' && pointer.isActive) {
+                            return;
                         }
                         if (!pointer.isActive) {
                             pointer.isActive = true;

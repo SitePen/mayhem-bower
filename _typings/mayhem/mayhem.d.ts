@@ -2117,10 +2117,13 @@ declare module 'mayhem/ui/dom/events/EventManager' {
 	    private _master;
 	    private _keyboardManager;
 	    private _pointerManager;
+	    private _targets;
 	    constructor(master: Master);
 	    destroy(): void;
 	    private _emitKeyboardEvent(type, keyInfo);
-	    private _emitPointerEvent(type, pointer, target?, relatedTarget?);
+	    private _emitPointerEvent(type, pointer, target, relatedTarget?);
+	    private _emitEnter(pointer, target, relatedTarget?);
+	    private _emitLeave(pointer, target, relatedTarget?);
 	    private _handlePointerAdd(pointer);
 	    private _handlePointerCancel(pointer);
 	    private _handlePointerChange(pointer);
