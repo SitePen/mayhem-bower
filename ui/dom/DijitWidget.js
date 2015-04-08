@@ -21,7 +21,7 @@ define(["require", "exports", '../../binding/BindDirection', 'dojo/_base/lang', 
             return this._isFocused;
         };
         DijitWidget.prototype._isFocusedSetter = function (value) {
-            value && this._widget.domNode.focus();
+            value && (this._widget.focusNode || this._widget.domNode).focus();
             this._isFocused = value;
         };
         DijitWidget.prototype._initialize = function () {
